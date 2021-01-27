@@ -1,0 +1,49 @@
+version: '3'
+
+volumes:
+  db-data:
+  redis:
+  bundle:
+  node_modules:
+
+services:
+  web:
+    build: .
+    command: >
+      bash -c "rm -f tmp/pids/server.pid &&
+               bundle exec rails s -p 3000 -b '0.0.0.0'"
+    ports:
+      - '3000:3000'
+    volumes:
+      - '.:/test_app'
+      - 'bundle:/usr/local/bundle:cached'
+      - 'node_modules:/test_app/node_modules'
+      - '/test_app/vendor'
+      - '/test_app/tmp'
+      - '/test_app/log'
+      - '/test_app/.git'
+    environment:
+      - 'MYSQL_PASSWORD=mysql'
+    tty: true
+    stdin_open: true
+    depends_on:
+      - db
+      - redis
+    links:
+      - db
+  
+  db:
+    image: mysql:latest
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      - 'MYSQL_ROOT_PASSWORD=mysql'
+    volumes:
+      - 'db-data:/var/lib/mysql'
+  
+  redis:
+    image: redis:latest
+    command: redis-server
+    ports:
+      - 6379:6379
+    volumes:
+      - redis:/data
